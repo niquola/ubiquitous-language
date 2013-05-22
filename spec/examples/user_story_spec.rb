@@ -10,16 +10,32 @@ end
 
 class Author < UL::Sentence
   object :new_post do |attrs|
-    @post_attributes = attrs
+    @post = Post.new(attrs)
   end
 
-  verb :create, require: :new_post do
-    Post.crate(@post_attributes)
+  object :for_category do |category_name|
+    @category = Category.find_or_create_by_name(category_name)
+  end
+
+  condition :if_carma_allows, "Get more carma points" do
+    subject.carma > 100
+  end
+
+  verb :create,
+    require: %w[new_post for_category] do
+    @category.posts<< @post
+    @post.save
+    @post
+  end
+
+  verb :notifying_followers,
+    require: [:new_post,[:create]] do
+    enqueue('new.post', @post.id, subject.followers.pluck(:id))
   end
 
   protected
 
-  def some_helper
+  def enqueue(queue, *args)
   end
 end
 
@@ -30,9 +46,20 @@ describe Author do
     user.as(Author).should be_a(Author)
 
     sentece = user.as(Author)
+    .if_carma_allows
     .create
-    .new_post(title: 'UL', content: 'About DDD')
+    .new_post(title: 'Ubiquitous Language', content: 'About DDD')
+    .for_category('Domain Driven Design')
+    .notifying_followers
 
-    p sentece.sentece
+    sentece.sentece.should_not be_empty
+
+    sentece.eval!
+
+    # sentece = user.as(Author)
+    # .create
+    # .new(Post, title: 'UL', content: 'About DDD')
+    # .notifying_followers
+
   end
 end

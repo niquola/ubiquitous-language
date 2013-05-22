@@ -21,6 +21,14 @@ module UbiquitousLanguage
       verbs[name] = [opts, block]
     end
 
+    def self.conditions
+      @condition ||= {}
+    end
+
+    def self.condition(name, opts = {}, &block)
+      conditions[name] = [opts, block]
+    end
+
     def sentece
       @_sentence_
     end
@@ -29,13 +37,11 @@ module UbiquitousLanguage
       @_sentence_ ||= []
       @_sentence_.push([name,args])
       self
-      # opts, block = self.class.verbs[name] || self.class.objects[name]
-      # if block
-      #   self.instance_exec(*args,&block)
-      #   self
-      # else
-      #   super
-      # end
+    end
+
+    def eval!
+      puts "Good job. Done. \nSentence:\n  #{subject.inspect}\n  #{@_sentence_.map(&:inspect).join("\n  ")}"
+      # self.instance_exec(*args,&block)
     end
   end
 end
