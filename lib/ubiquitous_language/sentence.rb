@@ -1,39 +1,47 @@
 module UbiquitousLanguage
   class Sentence
     attr_reader :subject
+
+    PARTS_WEIGHTS = {object: 1,
+                     pre_condition: 2,
+                     verb: 3}
+
     def initialize(subject)
       @subject = subject
     end
 
-    def self.objects
-      @objects ||= {}
-    end
+    class << self
+      def parts
+        @parts ||= {}
+      end
 
-    def self.object(name, opts = {}, &block)
-      objects[name] = [opts, block]
-    end
+      def object(name, options = {}, &block)
+        parts[name] = [:object, options, block]
+      end
 
-    def self.verbs
-      @verbs ||= {}
-    end
+      def verb(name, options = {}, &block)
+        parts[name] = [:verb, options, block]
+      end
 
-    def self.verb(name, opts = {}, &block)
-      verbs[name] = [opts, block]
-    end
+      def pre_condition(name, options = {}, &block)
+        parts[name] = [:pre_condition, options, block]
+      end
 
-    def self.conditions
-      @condition ||= {}
-    end
-
-    def self.condition(name, opts = {}, &block)
-      conditions[name] = [opts, block]
+      def post_action(name, options = {}, &block)
+        parts[name] = [:post_action, options, block]
+      end
     end
 
     def sentece
       @_sentence_
     end
 
+    def respond_to?(name)
+      self.class.parts.key?(name) || super
+    end
+
     def method_missing(name,*args)
+      super unless self.class.parts.key?(name.to_sym)
       @_sentence_ ||= []
       @_sentence_.push([name,args])
       self

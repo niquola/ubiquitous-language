@@ -17,7 +17,7 @@ class Author < UL::Sentence
     @category = Category.find_or_create_by_name(category_name)
   end
 
-  condition :if_carma_allows, "Get more carma points" do
+  pre_condition :if_carma_allows, "Get more carma points" do
     subject.carma > 100
   end
 
@@ -28,7 +28,7 @@ class Author < UL::Sentence
     @post
   end
 
-  verb :notifying_followers,
+  post_action :notifying_followers,
     require: [:new_post,[:create]] do
     enqueue('new.post', @post.id, subject.followers.pluck(:id))
   end
