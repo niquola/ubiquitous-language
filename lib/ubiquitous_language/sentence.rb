@@ -2,12 +2,45 @@ module UbiquitousLanguage
   class Sentence
     attr_reader :subject
 
-    PARTS_WEIGHTS = {object: 1,
-                     pre_condition: 2,
-                     verb: 3}
-
     def initialize(subject)
       @subject = subject
+    end
+
+    class PartType
+      attr_reader :name
+      attr_reader :type
+      attr_reader :block
+
+      def initialize(name, type, options = {}, &block)
+        @name = name
+        @type = name
+        @options = options
+        @block = block
+      end
+
+      def requires
+        @options[:requires] || []
+      end
+    end
+
+    class Part
+      attr_reader :name
+      attr_reader :part_type
+      attr_reader :args
+
+      def initialize(name, args, part_type)
+        @name = name.to_sym
+        @args = args
+        @part_type = part_type
+      end
+
+      def requires
+        part_type.requires
+      end
+
+      def block
+        part_type.block
+      end
     end
 
     class << self
@@ -16,40 +49,54 @@ module UbiquitousLanguage
       end
 
       def object(name, options = {}, &block)
-        parts[name] = [:object, options, block]
+        type = :object
+        parts[name] = PartType.new(name, type, options, &block)
       end
 
       def verb(name, options = {}, &block)
-        parts[name] = [:verb, options, block]
+        type = :verb
+        parts[name] = PartType.new(name, type, options, &block)
       end
 
       def pre_condition(name, options = {}, &block)
-        parts[name] = [:pre_condition, options, block]
+        type = :pre_condition
+        parts[name] = PartType.new(name, type, options, &block)
       end
 
       def post_action(name, options = {}, &block)
-        parts[name] = [:post_action, options, block]
+        type = :post_action
+        parts[name] = PartType.new(name, type, options, &block)
       end
     end
 
-    def sentece
-      @_sentence_
+    def sentence
+      @_sentence_ ||= []
+    end
+
+    def sentence_tsorted
+      PartsSemanticSort.new(self.sentence).tsort
     end
 
     def respond_to?(name)
       self.class.parts.key?(name) || super
     end
 
-    def method_missing(name,*args)
-      super unless self.class.parts.key?(name.to_sym)
-      @_sentence_ ||= []
-      @_sentence_.push([name,args])
+    def method_missing(name, *args)
+      super unless part_type = self.class.parts[name.to_sym]
+      sentence.push Part.new(name,args, part_type)
       self
     end
 
     def eval!
-      puts "Good job. Done. \nSentence:\n  #{subject.inspect}\n  #{@_sentence_.map(&:inspect).join("\n  ")}"
-      # self.instance_exec(*args,&block)
+      puts "\nEval sentence:"
+      sentence_tsorted.each do |part|
+        puts "  - #{part.name}"
+        self.instance_exec(*part.args, &part.block)
+      end
+      puts
+    rescue => e
+      puts "  ! Chain is broken by #{e}"
+      raise
     end
   end
 end

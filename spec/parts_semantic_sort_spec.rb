@@ -10,10 +10,9 @@ describe UL::PartsSemanticSort do
       [:last, [:first]],
       [:first]
     ].map do |p|
-      OpenStruct.new(name: p[0], dependencies: p[1] || [])
+      OpenStruct.new(name: p[0], requires: p[1] || [])
     end
     sorted = described_class.new(sentence).tsort
-    p sorted
-    # sorted.should == %w[first second third last].map(&:to_sym)
+    sorted.map(&:name).should == %w[first second third last].map(&:to_sym)
   end
 end
