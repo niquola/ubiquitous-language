@@ -49,7 +49,7 @@ class Author < UL::Sentence
     @category = Category.find_or_create_by_name(category_name)
   end
 
-  pre_condition :if_carma_allows do
+  pre_condition :if_rating_allows do
     if subject.carma < 100
       raise "Your carmas is not enough"
     end
@@ -83,7 +83,7 @@ describe Author do
     user.as(Author).should be_a(Author)
 
     sentence = user.as(Author)
-    .if_carma_allows
+    .if_rating_allows
     .create
     .new_post(title: 'Ubiquitous Language', content: 'About DDD')
     .for_category('Domain Driven Design')
